@@ -10,6 +10,85 @@ from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.preprocessing import MultiLabelBinarizer
 import random
 
+
+def community_similarity_vs_pathlength(
+    nodes,
+    G,
+    features,
+    labels,
+    samples=500,
+    title="Community similarity vs average shortest path"
+):
+
+
+    groups = defaultdict(list)
+    for n in nodes:
+        groups[labels[n]].append(n)
+
+    comm_ids = sorted(groups.keys())
+
+    avg_sims = []
+    avg_paths = []
+    sizes = []   # <-- community sizes
+
+    # -----------------------------
+    # compute metrics per community
+    # -----------------------------
+    for c in comm_ids:
+        members = groups[c]
+        sizes.append(len(members))
+
+        if len(members) < 2:
+            avg_sims.append(np.nan)
+            avg_paths.append(np.nan)
+            continue
+
+        # cosine similarity (sampling)
+        U = random.choices(members, k=samples)
+        V = random.choices(members, k=samples)
+
+        X = np.vstack([features[u] for u in U])
+        Y = np.vstack([features[v] for v in V])
+
+        sims = cosine_similarity(X, Y).diagonal()
+        avg_sims.append(sims.mean())
+
+        # shortest path (largest connected component)
+        subG = G.subgraph(members)
+        if nx.is_connected(subG):
+            avg_paths.append(nx.average_shortest_path_length(subG))
+        else:
+            lcc = max(nx.connected_components(subG), key=len)
+            avg_paths.append(
+                nx.average_shortest_path_length(subG.subgraph(lcc))
+            )
+
+    avg_sims = np.array(avg_sims)
+    avg_paths = np.array(avg_paths)
+    sizes = np.array(sizes)
+
+    plt.figure(figsize=(6, 5))
+
+    # log-scaled sizes for visibility
+    size_scale = 20
+    log_sizes = np.log(sizes)
+
+    plt.scatter(
+        avg_paths,
+        avg_sims,
+        s=size_scale * log_sizes,
+        alpha=0.7
+    )
+
+    plt.xlabel("Average shortest path length")
+    plt.ylabel("Average cosine similarity")
+    plt.title(title)
+    plt.grid(True)
+    plt.show()
+
+
+
+
 def sampled_group_cosine_matrix(
     nodes,
     features,
