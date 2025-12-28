@@ -17,9 +17,8 @@ def community_similarity_vs_pathlength(
     features,
     labels,
     samples=500,
-    title="Community similarity vs average shortest path"
+    title="Within-Community Music Taste Similarity vs. Community Density"
 ):
-
 
     groups = defaultdict(list)
     for n in nodes:
@@ -29,11 +28,8 @@ def community_similarity_vs_pathlength(
 
     avg_sims = []
     avg_paths = []
-    sizes = []   # <-- community sizes
+    sizes = []
 
-    # -----------------------------
-    # compute metrics per community
-    # -----------------------------
     for c in comm_ids:
         members = groups[c]
         sizes.append(len(members))
@@ -43,9 +39,13 @@ def community_similarity_vs_pathlength(
             avg_paths.append(np.nan)
             continue
 
-        # cosine similarity (sampling)
-        U = random.choices(members, k=samples)
-        V = random.choices(members, k=samples)
+        # --- sample distinct pairs (u ≠ v)
+        pairs = []
+        while len(pairs) < samples:
+            u, v = random.sample(members, 2)
+            pairs.append((u, v))
+
+        U, V = zip(*pairs)
 
         X = np.vstack([features[u] for u in U])
         Y = np.vstack([features[v] for v in V])
@@ -53,7 +53,7 @@ def community_similarity_vs_pathlength(
         sims = cosine_similarity(X, Y).diagonal()
         avg_sims.append(sims.mean())
 
-        # shortest path (largest connected component)
+        # --- average shortest path length
         subG = G.subgraph(members)
         if nx.is_connected(subG):
             avg_paths.append(nx.average_shortest_path_length(subG))
@@ -67,19 +67,19 @@ def community_similarity_vs_pathlength(
     avg_paths = np.array(avg_paths)
     sizes = np.array(sizes)
 
+    # ------------------------
+    # Plot scatter 
+    # ------------------------
     plt.figure(figsize=(6, 5))
-
-    # log-scaled sizes for visibility
-    size_scale = 20
-    log_sizes = np.log(sizes)
 
     plt.scatter(
         avg_paths,
         avg_sims,
-        s=size_scale * log_sizes,
+        s=20 * np.log(sizes),
         alpha=0.7
     )
 
+    plt.xlim(1, 9)
     plt.xlabel("Average shortest path length")
     plt.ylabel("Average cosine similarity")
     plt.title(title)
