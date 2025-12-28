@@ -202,10 +202,11 @@ def distance_k_cosine_similarity(G, features, max_dist=3, n_samples=10000):
 
 
 
+
 def plot_num_artists_vs_avg_similarity(
     G,
     features,
-    random_samples=20,
+    random_samples=15,
     seed=42
 ):
     random.seed(seed)
@@ -223,7 +224,8 @@ def plot_num_artists_vs_avg_similarity(
         if len(neighbors) == 0:
             continue
 
-        k_artists = int(np.sum(features[u]))
+        k_artists = int(np.count_nonzero(features[u] > 0))
+
 
         # --- neighbor similarity ---
         neigh_sims = []
