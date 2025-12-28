@@ -2,7 +2,7 @@ This project explores the structure and properties of a social/music network der
 
 -- Files --
 
-main.py contains the expermients and data analysis used to write the report
+main.ipynb contains the expermients and data analysis used to write the report
 
 functions.py contains all functions used to run the experimental data analysis
 
